@@ -3,14 +3,12 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"fmt"
 	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -31,16 +29,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userName := vars["userName"]
-
-	db, err := sql.Open("mysql", "ryan:1234Abcd!@/rydb")
-
-	var id int64
-	row := db.QueryRow("SELECT id FROM users WHERE name = ?", userName)
-	err = row.Scan(&id)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	id := GetIdFromUserName(userName)
 	fmt.Fprintf(w, "Login Successful", id)
 }
 
@@ -48,7 +37,6 @@ func SearchArtist(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	searchVal := vars["searchVal"]
 
-	//var url = "https://itunes.apple.com/search?callback=callback"
 	var url = "https://itunes.apple.com/search?"
 	var searchEntity = "album"
 	//var searchAttribute = "allArtistTerm"

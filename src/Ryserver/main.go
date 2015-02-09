@@ -3,12 +3,14 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -16,7 +18,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/index", Index)
-	router.HandleFunc("/", Index)
+	router.HandleFunc("/login/{userName}", Login)
 	router.HandleFunc("/search/{searchVal}", SearchArtist)
 	log.Fatal(http.ListenAndServe(":5555", router))
 }
@@ -26,16 +28,28 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func Login(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userName := vars["userName"]
+
+	db, err := sql.Open("mysql", "ryan:1234Abcd!@/rydb")
+
+	var id int64
+	row := db.QueryRow("SELECT id FROM users WHERE name = ?", userName)
+	err = row.Scan(&id)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Fprintf(w, "Login Successful", id)
+}
+
 func SearchArtist(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	searchVal := vars["searchVal"]
-	fmt.Fprintln(w, "Search For:", searchVal)
 
-	//url := "http://restapi3.apiary.io/notes"
-	//fmt.Println("URL:>", url)
-
-	var url = "https://itunes.apple.com/search?callback=callback"
-
+	//var url = "https://itunes.apple.com/search?callback=callback"
+	var url = "https://itunes.apple.com/search?"
 	var searchEntity = "album"
 	//var searchAttribute = "allArtistTerm"
 	var searchLimit = "200"
@@ -46,9 +60,9 @@ func SearchArtist(w http.ResponseWriter, r *http.Request) {
 	url += "&limit=" + searchLimit
 	url += "&term=" + searchTerm
 
-	var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
+	var jsonStr = []byte(`{"title":"Placeholder."}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	req.Header.Set("X-Custom-Header", "myvalue")
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -58,9 +72,11 @@ func SearchArtist(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	fmt.Fprintf(w, "response Status:", resp.Status)
-	fmt.Fprintf(w, "response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Fprintf(w, "response Body:", string(body))
+	callback := r.FormValue("callback")
 
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	fmt.Fprintf(w, "%s(%s)", callback, body)
 }

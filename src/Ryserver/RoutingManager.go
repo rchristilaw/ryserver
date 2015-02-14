@@ -9,6 +9,7 @@ import (
 )
 
 func InitRoutes() {
+	log.Println("Initializing routes")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/sendemail", SendEmail)
 	router.HandleFunc("/login/{userName}", Login)

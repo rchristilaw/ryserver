@@ -13,6 +13,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type SearchParameters struct {
+	Category string
+	Value    string
+}
+
 func SearchArtist(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	searchVal := vars["searchVal"]
@@ -62,23 +67,9 @@ func sendAppleSearchRequest(url string) []byte {
 	return body
 }
 
-type SearchParameters struct {
-	Category string
-	Value    string
-}
-
 func parseParameters(searchString string) []SearchParameters {
 
 	log.Println("Parsing Parameters: " + searchString)
-
-	//	if !strings.Contains(searchString, "&") {
-	//		log.Println("Single Parameter")
-	//		keyValuePair := strings.Split(searchString, "=")
-	//		log.Println(l)
-	//		parameterMap[keyValuePair[0]] = keyValuePair[1]
-	//		log.Println("Returning map "+keyValuePair[0], keyValuePair[1])
-	//		return parameterMap
-	//	}
 
 	params := strings.Split(searchString, "&")
 	log.Println(len(params))
@@ -86,27 +77,29 @@ func parseParameters(searchString string) []SearchParameters {
 
 	for index, each := range params {
 		keyValuePair := strings.Split(each, "=")
+		log.Println(keyValuePair[0], keyValuePair[1])
 		parameterMap[index] = SearchParameters{Category: keyValuePair[0], Value: keyValuePair[1]}
 	}
+
 	return parameterMap
 }
 
 func prepareSearchUrl(parameterMap []SearchParameters) string {
-	if len(parameterMap) == 0 {
-		return ""
-	}
-
-	searchVal := "drake"
 	var url = "https://itunes.apple.com/search?"
 	var searchEntity = "album"
 	//var searchAttribute = "allArtistTerm"
 	var searchLimit = "200"
-	var searchTerm = searchVal
 
 	url += "&entity=" + searchEntity
 	//url += "&attribute=" + searchAttribute;
 	url += "&limit=" + searchLimit
-	url += "&term=" + searchTerm
+
+	for _, each := range parameterMap {
+		if each.Category == "artist" {
+			url += "&term=" + each.Value
+		}
+	}
+
 	return url
 
 }
